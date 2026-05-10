@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>足球数据分析系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1E88E5;
+            --primary-dark: #1565C0;
+            --primary-darker: #0D47A1;
+            --text-color: #333333;
+            --text-light: #666666;
+            --white: #FFFFFF;
+            --border-color: #E0E0E0;
+            --bg-gray: #F5F7FA;
+            --bg-card: #F9FAFB;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --header-height: 56px;
+            --sidebar-width: 240px;
+            --tab-height: 48px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--white);
+            color: var(--text-color);
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text-color);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-color);
+            padding: 12px 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            min-width: 40px;
+            height: 32px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary:active {
+            background: var(--primary-darker);
+        }
+
+        .btn-secondary {
+            background: var(--bg-gray);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #E8EAED;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .sidebar {
+            position: absolute;
+            left: 0;
+            top: var(--header-height);
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--white);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .menu-section {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-item {
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-gray);
+        }
+
+        .menu-item.active {
+            background: rgba(30, 136, 229, 0.08);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .menu-item-icon {
+            font-size: 18px;
+        }
+
+        .menu-expandable {
+            cursor: pointer;
+        }
+
+        .menu-expandable .menu-item-arrow {
+            margin-left: auto;
+            transition: transform 0.3s;
+            font-size: 12px;
+        }
+
+        .menu-expandable.expanded .menu-item-arrow {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            display: none;
+            background: var(--bg-gray);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .submenu.show {
+            display: block;
+        }
+
+        .submenu-item {
+            padding: 12px 20px 12px 35px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-light);
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .submenu-item:hover {
+            background: #E8EAED;
+        }
+
+        .submenu-item:hover .btn-delete-match {
+            opacity: 1;
+        }
+
+        .submenu-item.active {
+            background: rgba(30, 136, 229, 0.08);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .submenu-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .match-id {
+            font-size: 11px;
+            color: #999;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .btn-delete-match {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-delete-match:hover {
+            color: var(--danger);
+        }
+
+        .match-title {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .match-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .submenu-item-empty {
+            padding: 30px 20px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .main-content {
+            position: absolute;
+            left: var(--sidebar-width);
+            top: var(--header-height);
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            background: var(--bg-gray);
+        }
+
+        .overview-container {
+            padding: 20px;
+        }
+
+        .overview-header {
+            margin-bottom: 20px;
+        }
+
+        .overview-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .stat-card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .stat-card-label {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .chart-container {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-color);
+        }
+
+        .match-detail-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .match-header {
+            background: var(--white);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .match-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .match-header-info {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .tabs-container {
+            display: none;
+            background: var(--white);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tabs {
+            display: flex;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+            background: var(--bg-gray);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .data-section {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .data-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--bg-gray);
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .data-table td {
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
+            margin: 12px 0;
+        }
+
+        .progress-bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: var(--bg-gray);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .progress-bar-fill.home {
+            background: var(--success);
+        }
+
+        .progress-bar-fill.draw {
+            background: var(--warning);
+        }
+
+        .progress-bar-fill.away {
+            background: var(--danger);
+        }
+
+        .prediction-result {
+            text-align: center;
+            padding: 24px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .prediction-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .prediction-value.home-win {
+            color: var(--success);
+        }
+
+        .prediction-value.draw {
+            color: var(--warning);
+        }
+
+        .prediction-value.away-win {
+            color: var(--danger);
+        }
+
+        .analysis-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .analysis-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .analysis-card-content {
+            font-size: 14px;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--white);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 16px 0 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-section-title:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: calc(var(--header-height) + 16px);
+            right: 20px;
+            padding: 12px 20px;
+            background: var(--white);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 300;
+            display: none;
+            animation: slideIn 0.3s ease;
+            max-width: calc(100% - 40px);
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .back-to-top {
+            position: fixed;
+            right: 20px;
+            bottom: 80px;
+            width: 44px;
+            height: 44px;
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 90;
+            transition: all 0.2s;
+        }
+
+        .back-to-top:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .back-to-top.show {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 16px;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .btn {
+                min-width: 44px;
+                height: 44px;
+                padding: 0 12px;
+                font-size: 13px;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: var(--header-height);
+                width: 280px;
+                height: calc(100vh - var(--header-height) - var(--tab-height));
+                z-index: 150;
+                transition: left 0.3s;
+                box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                top: var(--header-height);
+                left: 0;
+                right: 0;
+                bottom: var(--tab-height);
+                background: rgba(0,0,0,0.3);
+                z-index: 140;
+                display: none;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .main-content {
+                left: 0;
+                bottom: var(--tab-height);
+            }
+
+            .tabs-container {
+                display: block;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                background: var(--white);
+                box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            }
+
+            .tabs {
+                height: var(--tab-height);
+            }
+
+            .tab {
+                padding: 12px 8px;
+                font-size: 12px;
+                border-bottom: none;
+                border-top: 2px solid transparent;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .tab.active {
+                border-top-color: var(--primary-color);
+                border-bottom-color: transparent;
+            }
+
+            .tab-icon {
+                font-size: 18px;
+            }
+
+            .overview-container,
+            .tab-content {
+                padding: 16px;
+            }
+
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 16px;
+            }
+
+            .stat-card-value {
+                font-size: 28px;
+            }
+
+            .data-section {
+                padding: 16px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .modal {
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+            }
+
+            .back-to-top {
+                bottom: calc(var(--tab-height) + 20px);
+            }
+        }
+
+        @media (max-width: 428px) {
+            .header {
+                padding: 0 12px;
+            }
+
+            .header-title {
+                font-size: 15px;
+            }
+
+            .btn {
+                padding: 0 10px;
+                font-size: 12px;
+            }
+
+            .overview-container,
+            .tab-content {
+                padding: 12px;
+            }
+
+            .prediction-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <div class="header-title">⚽ 足球数据分析系统</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="exportData()">数据导出</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">数据导入</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="btn btn-secondary" onclick="confirmExit()">退出</button>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="menu-section">
+            <div class="menu-item active" onclick="selectOverview()">
+                <span class="menu-item-icon">📊</span>
+                <span>数据概览</span>
+            </div>
+        </div>
+        <div class="menu-section">
+            <div class="menu-item menu-expandable" onclick="toggleSubmenu(this)">
+                <span class="menu-item-icon">🏆</span>
+                <span>比赛管理</span>
+                <span class="menu-item-arrow">▶</span>
+            </div>
+            <div class="submenu" id="matchesSubmenu">
+                <div style="padding:12px 16px;">
+                    <button class="btn btn-primary" style="width:100%" onclick="openAddMatchModal()">+ 添加比赛</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <div class="overview-container" id="overviewContainer">
+            <div class="overview-header">
+                <div class="overview-title">数据概览</div>
+            </div>
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-card-value" id="totalMatches">0</div>
+                    <div class="stat-card-label">已添加比赛场数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="finishedMatches">0</div>
+                    <div class="stat-card-label">已完成的比赛场数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="correctPredictions">0</div>
+                    <div class="stat-card-label">预测正确的比赛场数</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">比赛数据统计</div>
+                <canvas id="overviewChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="match-detail-container" id="matchDetailContainer">
+            <div class="match-header">
+                <div class="match-header-title" id="matchHeaderTitle">-</div>
+                <div class="match-header-info" id="matchHeaderInfo">-</div>
+            </div>
+            <div class="tabs-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="selectTab(0)">
+                        <span class="tab-icon">📉</span>
+                        <span>凯利指数</span>
+                    </div>
+                    <div class="tab" onclick="selectTab(1)">
+                        <span class="tab-icon">📈</span>
+                        <span>赔率</span>
+                    </div>
+                    <div class="tab" onclick="selectTab(2)">
+                        <span class="tab-icon">👥</span>
+                        <span>支持率</span>
+                    </div>
+                    <div class="tab" onclick="selectTab(3)">
+                        <span class="tab-icon">🎯</span>
+                        <span>预测</span>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content">
+                <div class="tab-panel active" id="tabKelly">
+                    <div class="data-section">
+                        <div class="data-section-title">
+                            <span>凯利指数数据</span>
+                            <button class="btn btn-primary" onclick="openEditKellyModal()">修改</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>类型</th><th>主胜</th><th>平局</th><th>客胜</th></tr>
+                            </thead>
+                            <tbody id="kellyTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-section-title">变化趋势</div>
+                        <canvas id="kellyChart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tabOdds">
+                    <div class="data-section">
+                        <div class="data-section-title">
+                            <span>赔率数据</span>
+                            <button class="btn btn-primary" onclick="openEditOddsModal()">修改</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>类型</th><th>主胜</th><th>平局</th><th>客胜</th></tr>
+                            </thead>
+                            <tbody id="oddsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-section-title">变化趋势</div>
+                        <canvas id="oddsChart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tabSupport">
+                    <div class="data-section">
+                        <div class="data-section-title">
+                            <span>支持率数据</span>
+                            <button class="btn btn-primary" onclick="openEditSupportModal()">修改</button>
+                        </div>
+                        <div id="supportData">
+                        </div>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-section-title">支持率分布</div>
+                        <canvas id="supportChart" height="250"></canvas>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tabPrediction">
+                    <div class="prediction-result">
+                        <div class="prediction-title">综合预测结果</div>
+                        <div class="prediction-value" id="predictionResult">-</div>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-section-title">预测概率分布</div>
+                        <div id="predictionProbabilities">
+                        </div>
+                    </div>
+                    <div class="analysis-card">
+                        <div class="analysis-card-title">分析依据</div>
+                        <div class="analysis-card-content" id="analysisContent">
+                            请先添加比赛数据以进行分析
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+    <div class="modal-overlay" id="addMatchModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">添加比赛</div>
+                <button class="modal-close" onclick="closeModal('addMatchModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addMatchForm">
+                    <div class="form-section-title">基本信息</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">联赛</label>
+                            <input type="text" class="form-input" id="matchLeague" required placeholder="如：英超">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">比赛时间</label>
+                            <input type="datetime-local" class="form-input" id="matchTime" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主队</label>
+                            <input type="text" class="form-input" id="homeTeam" required placeholder="主队名称">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客队</label>
+                            <input type="text" class="form-input" id="awayTeam" required placeholder="客队名称">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">比赛地点（可选）</label>
+                        <input type="text" class="form-input" id="matchVenue" placeholder="如：老特拉福德球场">
+                    </div>
+                    
+                    <div class="form-section-title">初赔（可选）</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜</label>
+                            <input type="number" class="form-input" id="initialHomeWin" step="0.01" min="1.01" max="100" placeholder="如：2.10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局</label>
+                            <input type="number" class="form-input" id="initialDraw" step="0.01" min="1.01" max="100" placeholder="如：3.20">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜</label>
+                            <input type="number" class="form-input" id="initialAwayWin" step="0.01" min="1.01" max="100" placeholder="如：3.50">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section-title">初凯利指数（可选）</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜</label>
+                            <input type="number" class="form-input" id="initialKellyHome" step="0.01" min="0" max="2" placeholder="如：0.95">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局</label>
+                            <input type="number" class="form-input" id="initialKellyDraw" step="0.01" min="0" max="2" placeholder="如：0.92">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜</label>
+                            <input type="number" class="form-input" id="initialKellyAway" step="0.01" min="0" max="2" placeholder="如：0.90">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section-title">支持率（可选）</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜(%)</label>
+                            <input type="number" class="form-input" id="supportHomeWin" step="0.1" min="0" max="100" placeholder="如：45.5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局(%)</label>
+                            <input type="number" class="form-input" id="supportDraw" step="0.1" min="0" max="100" placeholder="如：25.3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜(%)</label>
+                            <input type="number" class="form-input" id="supportAwayWin" step="0.1" min="0" max="100" placeholder="如：29.2">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addMatchModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveMatch()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editOddsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">修改赔率</div>
+                <button class="modal-close" onclick="closeModal('editOddsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editOddsForm">
+                    <div class="form-section-title">即时赔率</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜</label>
+                            <input type="number" class="form-input" id="currentHomeWin" step="0.01" min="1.01" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局</label>
+                            <input type="number" class="form-input" id="currentDraw" step="0.01" min="1.01" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜</label>
+                            <input type="number" class="form-input" id="currentAwayWin" step="0.01" min="1.01" max="100" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editOddsModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveOdds()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editKellyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">修改凯利指数</div>
+                <button class="modal-close" onclick="closeModal('editKellyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editKellyForm">
+                    <div class="form-section-title">即时凯利指数</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜</label>
+                            <input type="number" class="form-input" id="currentKellyHome" step="0.01" min="0" max="2" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局</label>
+                            <input type="number" class="form-input" id="currentKellyDraw" step="0.01" min="0" max="2" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜</label>
+                            <input type="number" class="form-input" id="currentKellyAway" step="0.01" min="0" max="2" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editKellyModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveKelly()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editSupportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">修改支持率</div>
+                <button class="modal-close" onclick="closeModal('editSupportModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editSupportForm">
+                    <div class="form-group">
+                        <label class="form-label">数据来源</label>
+                        <select class="form-input" id="supportSource">
+                            <option value="官方">官方</option>
+                            <option value="媒体调查">媒体调查</option>
+                            <option value="博彩公司">博彩公司</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主胜(%)</label>
+                            <input type="number" class="form-input" id="editSupportHomeWin" step="0.1" min="0" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">平局(%)</label>
+                            <input type="number" class="form-input" id="editSupportDraw" step="0.1" min="0" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">客胜(%)</label>
+                            <input type="number" class="form-input" id="editSupportAwayWin" step="0.1" min="0" max="100" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editSupportModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveSupport()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <div class="modal-title">确认操作</div>
+                <button class="modal-close" onclick="closeModal('confirmModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" style="text-align: center; font-size: 16px;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">取消</button>
+                <button class="btn btn-danger" onclick="executeConfirm()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let data = {
+            version: '2.0',
+            lastBackup: null,
+            matches: [],
+            correctPredictions: 0
+        };
+
+        let selectedMatchId = null;
+        let currentTabIndex = 0;
+        let confirmCallback = null;
+        let kellyChart = null;
+        let oddsChart = null;
+        let supportChart = null;
+        let overviewChart = null;
+
+        function init() {
+            loadData();
+            renderMatchesMenu();
+            updateOverview();
+            initScrollListener();
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('footballAnalysisData');
+            if (savedData) {
+                try {
+                    data = JSON.parse(savedData);
+                    if (!data.version) data.version = '2.0';
+                    if (!data.matches) data.matches = [];
+                    if (data.correctPredictions === undefined) data.correctPredictions = 0;
+                } catch (e) {
+                    data = { version: '2.0', lastBackup: null, matches: [], correctPredictions: 0 };
+                }
+            }
+        }
+
+        function saveData() {
+            data.lastBackup = new Date().toISOString();
+            localStorage.setItem('footballAnalysisData', JSON.stringify(data));
+        }
+
+        function generateId() {
+            return 'M' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4).toUpperCase();
+        }
+
+        function renderMatchesMenu() {
+            const container = document.getElementById('matchesSubmenu');
+            
+            let html = '<div style="padding:12px 16px;"><button class="btn btn-primary" style="width:100%" onclick="openAddMatchModal()">+ 添加比赛</button></div>';
+            
+            if (data.matches.length === 0) {
+                html += '<div class="submenu-item-empty">暂无比赛，请添加</div>';
+            } else {
+                data.matches.forEach(match => {
+                    const isActive = match.id === selectedMatchId ? 'active' : '';
+                    const time = new Date(match.time).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    html += '<div class="submenu-item ' + isActive + '" onclick="selectMatch(\'' + match.id + '\')">' +
+                        '<div class="submenu-item-header">' +
+                        '<span class="match-id">' + match.id + '</span>' +
+                        '<button class="btn-delete-match" onclick="event.stopPropagation();confirmDeleteMatch(\'' + match.id + '\')" title="删除">×</button>' +
+                        '</div>' +
+                        '<div class="match-title">' + match.homeTeam + ' vs ' + match.awayTeam + '</div>' +
+                        '<div class="match-time">' + match.league + ' · ' + time + '</div>' +
+                        '</div>';
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function toggleSubmenu(element) {
+            element.classList.toggle('expanded');
+            const submenu = element.nextElementSibling;
+            submenu.classList.toggle('show');
+        }
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+            document.querySelector('.sidebar-overlay').classList.toggle('show');
+        }
+
+        function selectOverview() {
+            selectedMatchId = null;
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            document.querySelector('.menu-item').classList.add('active');
+            
+            document.getElementById('overviewContainer').style.display = 'block';
+            document.getElementById('matchDetailContainer').style.display = 'none';
+            
+            updateOverview();
+            
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        function updateOverview() {
+            const totalMatches = data.matches.length;
+            const now = new Date();
+            const finishedMatches = data.matches.filter(m => new Date(m.time) < now).length;
+            
+            document.getElementById('totalMatches').textContent = totalMatches;
+            document.getElementById('finishedMatches').textContent = finishedMatches;
+            document.getElementById('correctPredictions').textContent = data.correctPredictions || 0;
+            
+            updateOverviewChart();
+        }
+
+        function updateOverviewChart() {
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            
+            if (overviewChart) {
+                overviewChart.destroy();
+            }
+            
+            const leagues = {};
+            data.matches.forEach(m => {
+                leagues[m.league] = (leagues[m.league] || 0) + 1;
+            });
+            
+            const labels = Object.keys(leagues);
+            const values = Object.values(leagues);
+            
+            if (labels.length === 0) {
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const colors = ['#1E88E5', '#43A047', '#FB8C00', '#E53935', '#8E24AA', '#00ACC1', '#7CB342', '#FFB300', '#F4511E', '#5E35B1'];
+            
+            overviewChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 12, padding: 15 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function selectMatch(matchId) {
+            selectedMatchId = matchId;
+            currentTabIndex = 0;
+            renderMatchesMenu();
+            
+            const match = data.matches.find(m => m.id === matchId);
+            if (match) {
+                document.getElementById('overviewContainer').style.display = 'none';
+                document.getElementById('matchDetailContainer').style.display = 'flex';
+                
+                document.getElementById('matchHeaderTitle').textContent = match.homeTeam + ' vs ' + match.awayTeam;
+                document.getElementById('matchHeaderInfo').textContent = match.league + ' · ' + new Date(match.time).toLocaleString('zh-CN');
+                
+                updateAllTabs(match);
+                selectTab(0);
+            }
+            
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        function selectTab(index) {
+            currentTabIndex = index;
+            const tabs = document.querySelectorAll('.tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            
+            panels.forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+        }
+
+        function updateAllTabs(match) {
+            updateKellyTab(match);
+            updateOddsTab(match);
+            updateSupportTab(match);
+            updatePredictionTab(match);
+        }
+
+        function updateKellyTab(match) {
+            const tbody = document.getElementById('kellyTableBody');
+            const kelly = match.kelly;
+            
+            if (!kelly) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999">暂无数据</td></tr>';
+            } else {
+                tbody.innerHTML = '<tr><td><strong>初凯利</strong></td><td>' + kelly.initial.home.toFixed(2) + '</td><td>' + kelly.initial.draw.toFixed(2) + '</td><td>' + kelly.initial.away.toFixed(2) + '</td></tr>' +
+                    '<tr><td><strong>即凯利</strong></td><td>' + kelly.current.home.toFixed(2) + '</td><td>' + kelly.current.draw.toFixed(2) + '</td><td>' + kelly.current.away.toFixed(2) + '</td></tr>';
+            }
+            
+            updateKellyChart(match);
+        }
+
+        function updateKellyChart(match) {
+            const ctx = document.getElementById('kellyChart').getContext('2d');
+            
+            if (kellyChart) {
+                kellyChart.destroy();
+            }
+            
+            const kelly = match.kelly;
+            if (!kelly) {
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            kellyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['初值', '即时'],
+                    datasets: [
+                        { label: '主胜', data: [kelly.initial.home, kelly.current.home], borderColor: '#52c41a', backgroundColor: 'rgba(82, 196, 26, 0.1)', tension: 0.3, fill: true },
+                        { label: '平局', data: [kelly.initial.draw, kelly.current.draw], borderColor: '#faad14', backgroundColor: 'rgba(250, 173, 20, 0.1)', tension: 0.3, fill: true },
+                        { label: '客胜', data: [kelly.initial.away, kelly.current.away], borderColor: '#ff4d4f', backgroundColor: 'rgba(255, 77, 79, 0.1)', tension: 0.3, fill: true }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: false, min: 0.8, max: 1.2 } }
+                }
+            });
+        }
+
+        function updateOddsTab(match) {
+            const tbody = document.getElementById('oddsTableBody');
+            const odds = match.odds;
+            
+            if (!odds) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999">暂无数据</td></tr>';
+            } else {
+                tbody.innerHTML = '<tr><td><strong>初赔</strong></td><td>' + odds.initial.homeWin + '</td><td>' + odds.initial.draw + '</td><td>' + odds.initial.awayWin + '</td></tr>' +
+                    '<tr><td><strong>即赔</strong></td><td>' + odds.current.homeWin + '</td><td>' + odds.current.draw + '</td><td>' + odds.current.awayWin + '</td></tr>';
+            }
+            
+            updateOddsChart(match);
+        }
+
+        function updateOddsChart(match) {
+            const ctx = document.getElementById('oddsChart').getContext('2d');
+            
+            if (oddsChart) {
+                oddsChart.destroy();
+            }
+            
+            const odds = match.odds;
+            if (!odds) {
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            oddsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['初值', '即时'],
+                    datasets: [
+                        { label: '主胜', data: [odds.initial.homeWin, odds.current.homeWin], borderColor: '#52c41a', backgroundColor: 'rgba(82, 196, 26, 0.1)', tension: 0.3, fill: true },
+                        { label: '平局', data: [odds.initial.draw, odds.current.draw], borderColor: '#faad14', backgroundColor: 'rgba(250, 173, 20, 0.1)', tension: 0.3, fill: true },
+                        { label: '客胜', data: [odds.initial.awayWin, odds.current.awayWin], borderColor: '#ff4d4f', backgroundColor: 'rgba(255, 77, 79, 0.1)', tension: 0.3, fill: true }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+        }
+
+        function updateSupportTab(match) {
+            const container = document.getElementById('supportData');
+            const support = match.support;
+            
+            if (!support) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">暂无支持率数据</div></div>';
+            } else {
+                container.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#999">数据来源：' + (support.source || '官方') + '</div>' +
+                    '<div class="progress-bar-container"><div class="progress-bar-label"><span>主胜</span><span>' + support.homeWin + '%</span></div><div class="progress-bar"><div class="progress-bar-fill home" style="width:' + support.homeWin + '%"></div></div></div>' +
+                    '<div class="progress-bar-container"><div class="progress-bar-label"><span>平局</span><span>' + support.draw + '%</span></div><div class="progress-bar"><div class="progress-bar-fill draw" style="width:' + support.draw + '%"></div></div></div>' +
+                    '<div class="progress-bar-container"><div class="progress-bar-label"><span>客胜</span><span>' + support.awayWin + '%</span></div><div class="progress-bar"><div class="progress-bar-fill away" style="width:' + support.awayWin + '%"></div></div></div>';
+            }
+            
+            updateSupportChart(match);
+        }
+
+        function updateSupportChart(match) {
+            const ctx = document.getElementById('supportChart').getContext('2d');
+            
+            if (supportChart) {
+                supportChart.destroy();
+            }
+            
+            const support = match.support;
+            if (!support) {
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            supportChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['主胜', '平局', '客胜'],
+                    datasets: [{
+                        data: [support.homeWin, support.draw, support.awayWin],
+                        backgroundColor: ['#52c41a', '#faad14', '#ff4d4f'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function updatePredictionTab(match) {
+            const odds = match.odds;
+            const kelly = match.kelly;
+            const support = match.support;
+            
+            let winScore = 0, drawScore = 0, loseScore = 0;
+            let totalWeight = 0;
+            let analysis = [];
+            
+            if (odds) {
+                const initialReturn = 1 / odds.initial.homeWin + 1 / odds.initial.draw + 1 / odds.initial.awayWin;
+                const currentReturn = 1 / odds.current.homeWin + 1 / odds.current.draw + 1 / odds.current.awayWin;
+                
+                const initProb = {
+                    home: (1 / odds.initial.homeWin) / initialReturn * 100,
+                    draw: (1 / odds.initial.draw) / initialReturn * 100,
+                    away: (1 / odds.initial.awayWin) / initialReturn * 100
+                };
+                
+                const currProb = {
+                    home: (1 / odds.current.homeWin) / currentReturn * 100,
+                    draw: (1 / odds.current.draw) / currentReturn * 100,
+                    away: (1 / odds.current.awayWin) / currentReturn * 100
+                };
+
+                winScore += (initProb.home + currProb.home) / 2;
+                drawScore += (initProb.draw + currProb.draw) / 2;
+                loseScore += (initProb.away + currProb.away) / 2;
+                totalWeight += 100;
+                
+                analysis.push('赔率分析：初赔显示主胜概率' + initProb.home.toFixed(1) + '%，即时赔率显示' + currProb.home.toFixed(1) + '%');
+            }
+
+            if (kelly) {
+                const avgInitial = (kelly.initial.home + kelly.initial.draw + kelly.initial.away) / 3;
+                const avgCurrent = (kelly.current.home + kelly.current.draw + kelly.current.away) / 3;
+                
+                const initNorm = { home: kelly.initial.home / avgInitial * 33.33, draw: kelly.initial.draw / avgInitial * 33.33, away: kelly.initial.away / avgInitial * 33.33 };
+                const currNorm = { home: kelly.current.home / avgCurrent * 33.33, draw: kelly.current.draw / avgCurrent * 33.33, away: kelly.current.away / avgCurrent * 33.33 };
+
+                winScore += (initNorm.home + currNorm.home) / 2;
+                drawScore += (initNorm.draw + currNorm.draw) / 2;
+                loseScore += (initNorm.away + currNorm.away) / 2;
+                totalWeight += 100;
+                
+                analysis.push('凯利指数分析：初值主胜' + kelly.initial.home.toFixed(2) + '，即时' + kelly.current.home.toFixed(2));
+            }
+
+            if (support) {
+                winScore += support.homeWin;
+                drawScore += support.draw;
+                loseScore += support.awayWin;
+                totalWeight += 100;
+                
+                analysis.push('支持率分析：主胜' + support.homeWin + '%，平局' + support.draw + '%，客胜' + support.awayWin + '%');
+            }
+
+            const resultEl = document.getElementById('predictionResult');
+            const probEl = document.getElementById('predictionProbabilities');
+            const analysisEl = document.getElementById('analysisContent');
+            
+            if (!odds && !kelly && !support) {
+                resultEl.textContent = '数据不足';
+                resultEl.className = 'prediction-value';
+                probEl.innerHTML = '<div class="empty-state"><div class="empty-state-text">请先添加数据</div></div>';
+                analysisEl.textContent = '请先添加赔率、凯利指数或支持率数据以进行分析';
+                return;
+            }
+
+            const winProb = (winScore / totalWeight * 100).toFixed(1);
+            const drawProb = (drawScore / totalWeight * 100).toFixed(1);
+            const loseProb = (loseScore / totalWeight * 100).toFixed(1);
+
+            let prediction = '';
+            let predictionClass = '';
+            
+            if (winProb > drawProb && winProb > loseProb) {
+                prediction = '主胜';
+                predictionClass = 'home-win';
+            } else if (drawProb > winProb && drawProb > loseProb) {
+                prediction = '平局';
+                predictionClass = 'draw';
+            } else {
+                prediction = '客胜';
+                predictionClass = 'away-win';
+            }
+            
+            resultEl.textContent = prediction;
+            resultEl.className = 'prediction-value ' + predictionClass;
+            
+            probEl.innerHTML = '<div class="progress-bar-container"><div class="progress-bar-label"><span>主胜概率</span><span>' + winProb + '%</span></div><div class="progress-bar"><div class="progress-bar-fill home" style="width:' + winProb + '%"></div></div></div>' +
+                '<div class="progress-bar-container"><div class="progress-bar-label"><span>平局概率</span><span>' + drawProb + '%</span></div><div class="progress-bar"><div class="progress-bar-fill draw" style="width:' + drawProb + '%"></div></div></div>' +
+                '<div class="progress-bar-container"><div class="progress-bar-label"><span>客胜概率</span><span>' + loseProb + '%</span></div><div class="progress-bar"><div class="progress-bar-fill away" style="width:' + loseProb + '%"></div></div></div>';
+            
+            analysisEl.innerHTML = analysis.join('<br><br>');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function openAddMatchModal() {
+            document.getElementById('addMatchForm').reset();
+            openModal('addMatchModal');
+        }
+
+        function saveMatch() {
+            const league = document.getElementById('matchLeague').value.trim();
+            const time = document.getElementById('matchTime').value;
+            const homeTeam = document.getElementById('homeTeam').value.trim();
+            const awayTeam = document.getElementById('awayTeam').value.trim();
+            
+            if (!league || !time || !homeTeam || !awayTeam) {
+                showNotification('请填写完整的比赛信息', 'error');
+                return;
+            }
+            
+            const match = {
+                id: generateId(),
+                league: league,
+                time: time,
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                venue: document.getElementById('matchVenue').value.trim() || '',
+                odds: null,
+                kelly: null,
+                support: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            const homeWin = parseFloat(document.getElementById('initialHomeWin').value);
+            const draw = parseFloat(document.getElementById('initialDraw').value);
+            const awayWin = parseFloat(document.getElementById('initialAwayWin').value);
+            
+            if (!isNaN(homeWin) && !isNaN(draw) && !isNaN(awayWin)) {
+                if (homeWin < 1.01 || draw < 1.01 || awayWin < 1.01 || homeWin > 100 || draw > 100 || awayWin > 100) {
+                    showNotification('赔率范围应在1.01-100之间', 'error');
+                    return;
+                }
+                match.odds = { initial: { homeWin: homeWin, draw: draw, awayWin: awayWin }, current: { homeWin: homeWin, draw: draw, awayWin: awayWin } };
+            } else if (document.getElementById('initialHomeWin').value || document.getElementById('initialDraw').value || document.getElementById('initialAwayWin').value) {
+                showNotification('请填写完整的初赔数据', 'error');
+                return;
+            }
+            
+            const kellyHome = parseFloat(document.getElementById('initialKellyHome').value);
+            const kellyDraw = parseFloat(document.getElementById('initialKellyDraw').value);
+            const kellyAway = parseFloat(document.getElementById('initialKellyAway').value);
+            
+            if (!isNaN(kellyHome) && !isNaN(kellyDraw) && !isNaN(kellyAway)) {
+                if (kellyHome < 0 || kellyDraw < 0 || kellyAway < 0 || kellyHome > 2 || kellyDraw > 2 || kellyAway > 2) {
+                    showNotification('凯利指数范围应在0-2之间', 'error');
+                    return;
+                }
+                match.kelly = { initial: { home: kellyHome, draw: kellyDraw, away: kellyAway }, current: { home: kellyHome, draw: kellyDraw, away: kellyAway } };
+            } else if (document.getElementById('initialKellyHome').value || document.getElementById('initialKellyDraw').value || document.getElementById('initialKellyAway').value) {
+                showNotification('请填写完整的初凯利指数数据', 'error');
+                return;
+            }
+            
+            const supportHomeWin = parseFloat(document.getElementById('supportHomeWin').value);
+            const supportDraw = parseFloat(document.getElementById('supportDraw').value);
+            const supportAwayWin = parseFloat(document.getElementById('supportAwayWin').value);
+            
+            if (!isNaN(supportHomeWin) && !isNaN(supportDraw) && !isNaN(supportAwayWin)) {
+                if (supportHomeWin < 0 || supportDraw < 0 || supportAwayWin < 0 || supportHomeWin > 100 || supportDraw > 100 || supportAwayWin > 100) {
+                    showNotification('支持率范围应在0-100之间', 'error');
+                    return;
+                }
+                const total = supportHomeWin + supportDraw + supportAwayWin;
+                if (Math.abs(total - 100) > 5) {
+                    showNotification('支持率总和应为100%（当前：' + total.toFixed(1) + '%）', 'error');
+                    return;
+                }
+                match.support = { homeWin: supportHomeWin, draw: supportDraw, awayWin: supportAwayWin, source: '官方' };
+            } else if (document.getElementById('supportHomeWin').value || document.getElementById('supportDraw').value || document.getElementById('supportAwayWin').value) {
+                showNotification('请填写完整的支持率数据', 'error');
+                return;
+            }
+            
+            data.matches.push(match);
+            saveData();
+            closeModal('addMatchModal');
+            renderMatchesMenu();
+            updateOverview();
+            showNotification('比赛添加成功', 'success');
+        }
+
+        function openEditOddsModal() {
+            if (!selectedMatchId) return;
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            if (match.odds) {
+                document.getElementById('currentHomeWin').value = match.odds.current.homeWin;
+                document.getElementById('currentDraw').value = match.odds.current.draw;
+                document.getElementById('currentAwayWin').value = match.odds.current.awayWin;
+            } else {
+                document.getElementById('currentHomeWin').value = '';
+                document.getElementById('currentDraw').value = '';
+                document.getElementById('currentAwayWin').value = '';
+            }
+            
+            openModal('editOddsModal');
+        }
+
+        function saveOdds() {
+            if (!selectedMatchId) return;
+            
+            const homeWin = parseFloat(document.getElementById('currentHomeWin').value);
+            const draw = parseFloat(document.getElementById('currentDraw').value);
+            const awayWin = parseFloat(document.getElementById('currentAwayWin').value);
+            
+            if (isNaN(homeWin) || isNaN(draw) || isNaN(awayWin)) {
+                showNotification('请输入有效的数字', 'error');
+                return;
+            }
+            
+            if (homeWin < 1.01 || draw < 1.01 || awayWin < 1.01 || homeWin > 100 || draw > 100 || awayWin > 100) {
+                showNotification('赔率范围应在1.01-100之间', 'error');
+                return;
+            }
+            
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            showConfirm('确定要保存赔率修改吗？', function() {
+                if (!match.odds) {
+                    match.odds = { initial: { homeWin: homeWin, draw: draw, awayWin: awayWin }, current: { homeWin: homeWin, draw: draw, awayWin: awayWin } };
+                } else {
+                    match.odds.current = { homeWin: homeWin, draw: draw, awayWin: awayWin };
+                }
+                
+                match.updatedAt = new Date().toISOString();
+                saveData();
+                closeModal('editOddsModal');
+                updateOddsTab(match);
+                updatePredictionTab(match);
+                showNotification('赔率更新成功', 'success');
+            });
+        }
+
+        function openEditKellyModal() {
+            if (!selectedMatchId) return;
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            if (match.kelly) {
+                document.getElementById('currentKellyHome').value = match.kelly.current.home;
+                document.getElementById('currentKellyDraw').value = match.kelly.current.draw;
+                document.getElementById('currentKellyAway').value = match.kelly.current.away;
+            } else {
+                document.getElementById('currentKellyHome').value = '';
+                document.getElementById('currentKellyDraw').value = '';
+                document.getElementById('currentKellyAway').value = '';
+            }
+            
+            openModal('editKellyModal');
+        }
+
+        function saveKelly() {
+            if (!selectedMatchId) return;
+            
+            const home = parseFloat(document.getElementById('currentKellyHome').value);
+            const draw = parseFloat(document.getElementById('currentKellyDraw').value);
+            const away = parseFloat(document.getElementById('currentKellyAway').value);
+            
+            if (isNaN(home) || isNaN(draw) || isNaN(away)) {
+                showNotification('请输入有效的数字', 'error');
+                return;
+            }
+            
+            if (home < 0 || draw < 0 || away < 0 || home > 2 || draw > 2 || away > 2) {
+                showNotification('凯利指数范围应在0-2之间', 'error');
+                return;
+            }
+            
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            showConfirm('确定要保存凯利指数修改吗？', function() {
+                if (!match.kelly) {
+                    match.kelly = { initial: { home: home, draw: draw, away: away }, current: { home: home, draw: draw, away: away } };
+                } else {
+                    match.kelly.current = { home: home, draw: draw, away: away };
+                }
+                
+                match.updatedAt = new Date().toISOString();
+                saveData();
+                closeModal('editKellyModal');
+                updateKellyTab(match);
+                updatePredictionTab(match);
+                showNotification('凯利指数更新成功', 'success');
+            });
+        }
+
+        function openEditSupportModal() {
+            if (!selectedMatchId) return;
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            if (match.support) {
+                document.getElementById('editSupportHomeWin').value = match.support.homeWin;
+                document.getElementById('editSupportDraw').value = match.support.draw;
+                document.getElementById('editSupportAwayWin').value = match.support.awayWin;
+                document.getElementById('supportSource').value = match.support.source || '官方';
+            } else {
+                document.getElementById('editSupportHomeWin').value = '';
+                document.getElementById('editSupportDraw').value = '';
+                document.getElementById('editSupportAwayWin').value = '';
+            }
+            
+            openModal('editSupportModal');
+        }
+
+        function saveSupport() {
+            if (!selectedMatchId) return;
+            
+            const homeWin = parseFloat(document.getElementById('editSupportHomeWin').value);
+            const draw = parseFloat(document.getElementById('editSupportDraw').value);
+            const awayWin = parseFloat(document.getElementById('editSupportAwayWin').value);
+            const source = document.getElementById('supportSource').value;
+            
+            if (isNaN(homeWin) || isNaN(draw) || isNaN(awayWin)) {
+                showNotification('请输入有效的数字', 'error');
+                return;
+            }
+            
+            if (homeWin < 0 || draw < 0 || awayWin < 0 || homeWin > 100 || draw > 100 || awayWin > 100) {
+                showNotification('支持率范围应在0-100之间', 'error');
+                return;
+            }
+            
+            const total = homeWin + draw + awayWin;
+            if (Math.abs(total - 100) > 5) {
+                showNotification('支持率总和应为100%（当前：' + total.toFixed(1) + '%）', 'error');
+                return;
+            }
+            
+            const match = data.matches.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            
+            showConfirm('确定要保存支持率修改吗？', function() {
+                match.support = { homeWin: homeWin, draw: draw, awayWin: awayWin, source: source };
+                match.updatedAt = new Date().toISOString();
+                saveData();
+                closeModal('editSupportModal');
+                updateSupportTab(match);
+                updatePredictionTab(match);
+                showNotification('支持率更新成功', 'success');
+            });
+        }
+
+        function confirmDeleteMatch(matchId) {
+            const match = data.matches.find(m => m.id === matchId);
+            if (match) {
+                showConfirm('确定要删除比赛 "' + match.homeTeam + ' vs ' + match.awayTeam + '" 吗？', function() {
+                    deleteMatch(matchId);
+                });
+            }
+        }
+
+        function deleteMatch(matchId) {
+            const index = data.matches.findIndex(m => m.id === matchId);
+            if (index > -1) {
+                data.matches.splice(index, 1);
+                saveData();
+                if (selectedMatchId === matchId) {
+                    selectedMatchId = null;
+                    selectOverview();
+                }
+                renderMatchesMenu();
+                updateOverview();
+                showNotification('比赛已删除', 'success');
+            }
+        }
+
+        function exportData() {
+            if (data.matches.length === 0) {
+                showNotification('没有数据可导出', 'error');
+                return;
+            }
+            
+            const exportData = JSON.stringify(data, null, 2);
+            const blob = new Blob([exportData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'football-analysis-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('数据导出成功', 'success');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!importedData.matches || !Array.isArray(importedData.matches)) {
+                        throw new Error('Invalid data structure');
+                    }
+                    
+                    showConfirm('导入将覆盖当前数据，确定继续吗？', function() {
+                        data = importedData;
+                        if (!data.version) data.version = '2.0';
+                        if (data.correctPredictions === undefined) data.correctPredictions = 0;
+                        saveData();
+                        selectedMatchId = null;
+                        renderMatchesMenu();
+                        updateOverview();
+                        selectOverview();
+                        showNotification('数据导入成功', 'success');
+                    });
+                } catch (error) {
+                    showNotification('文件格式错误，请选择有效的JSON文件', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function confirmExit() {
+            showConfirm('确定要退出系统吗？', function() {
+                showNotification('感谢使用足球数据分析系统！', 'success');
+                setTimeout(function() {
+                    window.location.href = 'about:blank';
+                }, 1000);
+            });
+        }
+
+        function showNotification(message, type) {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            
+            const notification = document.createElement('div');
+            notification.className = 'notification ' + type;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {
+                notification.classList.add('show');
+            }, 10);
+            
+            setTimeout(function() {
+                notification.classList.remove('show');
+                setTimeout(function() {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function showConfirm(message, callback) {
+            confirmCallback = callback;
+            document.getElementById('confirmMessage').textContent = message;
+            openModal('confirmModal');
+        }
+
+        function executeConfirm() {
+            if (confirmCallback) {
+                confirmCallback();
+                confirmCallback = null;
+            }
+            closeModal('confirmModal');
+        }
+
+        function initScrollListener() {
+            const mainContent = document.getElementById('mainContent');
+            const backToTop = document.getElementById('backToTop');
+            
+            mainContent.addEventListener('scroll', function() {
+                if (mainContent.scrollTop > 300) {
+                    backToTop.classList.add('show');
+                } else {
+                    backToTop.classList.remove('show');
+                }
+            });
+        }
+
+        function scrollToTop() {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.querySelector('.sidebar').classList.remove('show');
+                document.querySelector('.sidebar-overlay').classList.remove('show');
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
